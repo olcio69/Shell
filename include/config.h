@@ -7,6 +7,6 @@
 
 #define EXEC_FAILURE 127
 
-#define PROMPT_STR "$ "
+#define PROMPT_STR "$ : "
 
 #endif /* !_CONFIG_H_ */

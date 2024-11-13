@@ -10,4 +10,6 @@ typedef struct {
 
 extern builtin_pair builtins_table[];
 
-#endif /* !_BUILTINS_H_ */
+int bi_get_size(builtin_pair* b);
+
+#endif

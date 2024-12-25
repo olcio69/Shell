@@ -17,6 +17,8 @@ int get_arg_redir_len(command *com, int mode);
 
 int get_pipeseq_len(pipelineseq *p);
 
+int check_for_nulls(pipeline *ps[], int l);
+
 int get_pipe_len(pipeline *p);
 
 int open_w(redir* red);

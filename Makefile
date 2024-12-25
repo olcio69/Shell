@@ -9,7 +9,7 @@ PARSERDIR=input_parse
 CFLAGS=-I$(INC_DIR)
 
 
-SRCS=utils.c mshell.c builtins.c
+SRCS=utils.c mshell.c builtins.c error_detection.c exec_utils.c bg_mes.c pid_list.c
 OBJS:=$(SRCS:.c=.o)
 OBJS:=$(addprefix $(OBJ_DIR)/,$(OBJS))
 

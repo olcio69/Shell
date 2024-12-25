@@ -9,4 +9,8 @@
 
 #define PROMPT_STR "$ : "
 
+#define MAX_PID 10000
+
+#define MAX_MES 150
+
 #endif /* !_CONFIG_H_ */

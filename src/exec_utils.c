@@ -5,10 +5,12 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #include "error_detection.h"
 #include "exec_utils.h"
 #include "siparse.h"
+#include "utils.h"
 
 int get_arg_redir_len(command *com, int mode){
     if(mode == 0){ //mode 0 -> arg, mode 1 -> redir
@@ -73,7 +75,7 @@ void fill_redir(redir* redirs[], int redirs_len, command *com){
     }
     redirs[redirs_len] = NULL;
 }
-void fill_pipe(pipeline* pips[], int pip_len, pipelineseq *pipseq){
+void fill_pipe(pipeline *pips[], int pip_len, pipelineseq *pipseq){
     for(int j = 0; j < pip_len; j++){
         pips[j] = pipseq->pipeline;
         pipseq = pipseq->next;
@@ -86,16 +88,16 @@ int open_w(redir* red) {
     int w = 0;
     if (IS_RAPPEND(red->flags) || IS_ROUT(red->flags)) {
         if (IS_RAPPEND(red->flags)) {
-            w = open(red->filename, O_WRONLY | O_APPEND | O_CREAT, 0666); //dziala
+            w = open(red->filename, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH); //dziala
         } else if (IS_ROUT(red->flags)) {
-            w = open(red->filename, O_WRONLY | O_TRUNC | O_CREAT, 0666); //dziala
+            w = open(red->filename, O_WRONLY | O_TRUNC | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH); //dziala
         }
         if (w == -1) {
             file_err(red);
             close(w);
             return -1;
         }
-        else dup2(w, 1);
+        else dup2(w, STDOUT_FILENO);
         close(w);
         return 1;
     }
@@ -112,9 +114,25 @@ int open_r(redir* red){
             close(w);
             return -1;
         }
-        else dup2(w,0);
+        else dup2(w,STDIN_FILENO);
         close(w);
         return 1;
+    }
+    return 0;
+}
+
+int check_for_nulls(pipeline *ps[], int l){
+
+    for(int i = 0; i < l; i++) {
+        pipeline *p = ps[i];
+        command *com = p->commands->com;
+        int len = get_pipe_len(p);
+        if (len < 2) continue;
+        for (int i = 0; i < len; i++) {
+            if (com == NULL) return -1;
+            com = p->commands->next->com;
+            p->commands = p->commands->next;
+        }
     }
     return 0;
 }

@@ -5,11 +5,10 @@
 #include <signal.h>
 #include <errno.h>
 #include <dirent.h>
+#include <limits.h>
 
 #include "builtins.h"
 
-void err(char* s);
-int echo(char*[]);
 int exi_(char*[]);
 int lkill(char*[]);
 int lls(char *[]);
@@ -17,7 +16,6 @@ int lcd(char *[]);
 
 builtin_pair builtins_table[]={
 	{"exit",	&exi_},
-	{"lecho",	&echo},
 	{"lcd",		&lcd},
 	{"lkill",	&lkill},
 	{"lls",		&lls},
@@ -30,26 +28,13 @@ int bi_get_size(builtin_pair* b){
     return i;
 }
 
-void err(char *s){
+static void err(char *s){
     fprintf(stderr, "Builtin %s error.\n", s);
 }
-int get_argc(char * argv[]){
+static int get_argc(char * argv[]){
     int argc = 1;
     while(argv[argc] != NULL) ++argc;
     return argc;
-}
-
-int 
-echo(char * argv[])
-{
-	int i =1;
-	if (argv[i]) printf("%s", argv[i++]);
-	while  (argv[i])
-		printf(" %s", argv[i++]);
-
-	printf("\n");
-	fflush(stdout);
-	return 0;
 }
 
 int lls(char * argv[]){
@@ -71,13 +56,13 @@ int lls(char * argv[]){
             if (dp->d_name[0] == '.')
                 continue;
             printf("%s\n", dp->d_name);
+            fflush(stdout);
             if(errno != 0) {
                 err(argv[0]);
                 return BUILTIN_ERROR;
             }
         }
     } while (dp != NULL);
-    printf("\n");
     closedir(dirp);
     return 0;
 }
@@ -93,24 +78,30 @@ int lkill(char * argv[]){
         return BUILTIN_ERROR;
     }
     errno = 0;
-    int signal,process;
+    long signal,process;
+    char * endptr;
+    char * endptr2;
     if(argc == 3) {
         if (argv[1][0] != '-') {
             err(argv[0]);
             return BUILTIN_ERROR;
         }
-        process = strtol(argv[2], NULL, 10);
-        signal = strtol(argv[1] + 1, NULL, 10);
+        process = strtol(argv[2], &endptr, 10);
+        signal = strtol(argv[1] + 1, &endptr2, 10);
     }
     else if(argc == 2){
         signal = SIGINT;
-        process = strtol(argv[1],NULL,10);
+        process = strtol(argv[1],&endptr,10);
     }
-    if((signal == 0 || process == 0) && errno != 0){
+    if((signal == 0 && *endptr2 != '\0') || (process == 0 && *endptr != '\0') || ((signal == LONG_MAX || process == LONG_MAX) && errno != 0)){
         err(argv[0]);
         return BUILTIN_ERROR;
     }
-    kill(process,signal);
+    if(process > INT_MAX || process < INT_MIN || signal > INT_MAX || signal < INT_MIN){
+        err(argv[0]);
+        return BUILTIN_ERROR;
+    }
+    kill((int)process,(int)signal);
     return 0;
 }
 
@@ -124,7 +115,7 @@ int lcd(char * argv[]){
     }
     int z;
     if(argc == 1) z = chdir(home_dir);
-    else if(strcmp(argv[1],"~") == 0 || strcmp(argv[1],"home") == 0) z = chdir(home_dir);
+    else if(strcmp(argv[1],"~") == 0) z = chdir(home_dir);
     else z = chdir(argv[1]);
     if(z == -1){
         err(argv[0]);
@@ -133,10 +124,3 @@ int lcd(char * argv[]){
     return 0;
 }
 
-
-int 
-undefined(char * argv[])
-{
-	fprintf(stderr, "Command %s undefined.\n", argv[0]);
-	return BUILTIN_ERROR;
-}

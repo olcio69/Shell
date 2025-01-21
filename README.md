@@ -1,2 +1,4 @@
 # SO-shell
-Template for the shell project in Operating Systems course at tcs@JU.
+Creating a functioning Shell script in C, which handles pipelines,
+background processes, operating on files and basic builtins.
+Created as a part of Operating Systems course @TCS UJ
